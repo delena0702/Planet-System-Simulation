@@ -1,4 +1,5 @@
 const DEBUG = true;
+
 let MIN_LENGTH;
 
 window.onload = function () {
@@ -8,11 +9,11 @@ window.onload = function () {
 }
 
 class Animation {
-    width = 0|window.innerWidth;
-    height = 0|window.innerHeight;
+    width = 0 | window.innerWidth;
+    height = 0 | window.innerHeight;
     count = 0
     graphicManager = new PerspectiveManager()
-    sun = new Sun({manager: this.graphicManager})
+    sun = new Sun({ manager: this.graphicManager })
 
     ctx
     objs = []
@@ -34,7 +35,9 @@ class Animation {
         this.ctx.textBaseline = "middle";
 
         this.objs.push(this.sun);
-        if (DEBUG) this.objs.push(new Axes({manager: this.graphicManager}));
+        if (DEBUG) this.objs.push(new Axes({ manager: this.graphicManager }));
+        for (let i = 0; i < 500; i++)
+            this.objs.push(new Particle({ manager: this.graphicManager }));
     }
 
     start() {
@@ -71,7 +74,7 @@ class Animation {
         for (let i = 0; i < this.objs.length; i++) {
             let obj = this.objs[i];
             obj.next(count);
-            
+
             if (this.sun != obj && obj.pos != undefined && obj.pos.squareSize() <= (this.sun.r + obj.r) ** 2) {
                 this.sun.r += 3;
                 this.graphicManager.baseLength += 3;
@@ -80,20 +83,20 @@ class Animation {
         }
 
         if (count % 200 == 0)
-            this.objs.push(new Planet({manager: this.graphicManager, offset: this.sun.r}));
+            this.objs.push(new Planet({ manager: this.graphicManager, offset: this.sun.r }));
     }
 }
 
 class Planet {
-    alpha = "EE"
-    r = 20
+    alpha = "FF"
+    r = 0 | Math.random() * 10 + 15
     g = 0.0002
-    pos = Vector.randVector(300, 400);
-    velocity = Planet.makeVelocity(this.pos, 5, 6);
-    color = `#${new Array(3).fill(0).map(_ => (255 - (0|Math.random() * 128)).toString(16).padStart(2, '0')).join('')}${this.alpha}`
+    pos = Vector.randVector(300, 400)
+    velocity = Planet.makeVelocity(this.pos, 5, 6)
+    color = `#${new Array(3).fill(0).map(_ => (255 - (0 | Math.random() * 128)).toString(16).padStart(2, '0')).join('')}${this.alpha}`
     graphicManager
 
-    constructor(obj) { 
+    constructor(obj) {
         if (!obj) return;
 
         this.graphicManager = obj.manager;
@@ -103,7 +106,6 @@ class Planet {
 
     draw(ctx) {
         let pos = this.graphicManager.projection(this.pos);
-        let velocityPos = this.graphicManager.projection(this.pos.plus(this.velocity.resize(20)));
 
         if (pos.z >= 0) return;
 
@@ -114,18 +116,31 @@ class Planet {
         ctx.arc(pos.x, pos.y, this.r * PerspectiveManager.screenLength / pos.z, 0, 2 * Math.PI);
         ctx.closePath();
         ctx.fill();
-        
-        if (DEBUG && velocityPos.z < 0) {
-            ctx.strokeStyle = "#FF00FF";
-            ctx.beginPath();
-            ctx.moveTo(pos.x, pos.y);
-            ctx.lineTo(velocityPos.x, velocityPos.y);
-            ctx.closePath();
-            ctx.stroke();
+
+        if (DEBUG) {
+            var velocityPos = this.graphicManager.projection(this.pos.plus(this.velocity.resize(20)));
+            if (velocityPos.z < 0) {
+                ctx.strokeStyle = "#FF00FF";
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+                ctx.lineTo(velocityPos.x, velocityPos.y);
+                ctx.closePath();
+                ctx.stroke();
+            }
+
+            var posVector = this.graphicManager.projection(this.pos.plus(this.pos.resize(20)));
+            if (posVector.z < 0) {
+                ctx.strokeStyle = "#00FF00";
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+                ctx.lineTo(posVector.x, posVector.y);
+                ctx.closePath();
+                ctx.stroke();
+            }
 
             ctx.fillStyle = "#000000";
             if (pos.squareSize())
-                ctx.fillText(0|Math.sqrt(pos.squareSize()), pos.x, pos.y);
+                ctx.fillText(0 | Math.sqrt(this.pos.squareSize()), pos.x, pos.y);
             else
                 ctx.fillText(0 | this.r * PerspectiveManager.screenLength / pos.z, pos.x, pos.y);
         }
@@ -137,9 +152,8 @@ class Planet {
         this.pos = this.pos.plus(this.velocity);
         this.velocity = this.velocity.plus(this.pos.scalarProduct(-this.g));
 
-        if (count % 10 == 0) {
+        if (count % 10 == 0)
             this.velocity = this.velocity.scalarProduct(0.99);
-        }
     }
 
     getPriority() {
@@ -172,19 +186,21 @@ class Sun extends Planet {
     draw(ctx) {
         super.draw(ctx);
 
-        let pos = this.graphicManager.projection(this.pos);
-        ctx.save();
-        ctx.fillText(this.r, pos.x, pos.y);
-        ctx.restore();
+        if (DEBUG) {
+            let pos = this.graphicManager.projection(this.pos);
+            ctx.save();
+            ctx.fillText(this.r, pos.x, pos.y);
+            ctx.restore();
+        }
     }
 
-    next(count) {}
+    next(count) { }
 }
 
 class Axes {
     graphicManager
 
-    constructor(obj) { 
+    constructor(obj) {
         if (!obj) return;
 
         this.graphicManager = obj.manager;
@@ -244,10 +260,42 @@ class Axes {
         ctx.restore();
     }
 
-    next() {}
+    next() { }
 
     getPriority() {
         return this.graphicManager.projection(new Vector(0, 0, 0)).z;
+    }
+}
+
+
+class Particle {
+    pos = Vector.randVector(10000, 11000)
+    r = Math.random() + 0.5
+    color = `#${new Array(3).fill(0).map(_ => (255 - (0 | Math.random() * 64) - 64).toString(16).padStart(2, '0')).join('')}`
+    graphicManager
+
+    constructor(obj) {
+        if (!obj) return;
+
+        this.graphicManager = obj.manager;
+    }
+
+    draw(ctx) {
+        let pos = this.graphicManager.projection(this.pos);
+        if (pos.z >= 0) return;
+
+        ctx.save();
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, this.r, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    next() {}
+
+    getPriority() {
+        return this.graphicManager.projection(this.pos).z;
     }
 }
 
@@ -267,6 +315,7 @@ class Vector {
     unit() { return this.resize(1); }
     resize(len) {
         let length = Math.sqrt(this.squareSize());
+        if (length == 0) return this;
         return new Vector(len * this.x / length, len * this.y / length, len * this.z / length);
     }
 
@@ -282,7 +331,7 @@ class Vector {
             let position = new Array(3).fill(0).map(_ => Math.random() * 2 * maxr - maxr);
             let squareLength = position.reduce((a, x) => a + x ** 2, 0);
 
-            if (squareLength >= minr**2 && squareLength <= maxr**2)
+            if (squareLength >= minr ** 2 && squareLength <= maxr ** 2)
                 return new Vector(position[0], position[1], position[2]);
         }
     }
@@ -292,13 +341,13 @@ class PerspectiveManager {
     static screenLength = -300
     baseLength = 300
     pre
-    th = Math.PI*3/2
+    th = Math.PI * 3 / 2
     pi = 0
     keyStat = {}
 
     constructor() {
-        window.onkeydown = (e) => {this.keyStat[e.key] = true;};
-        window.onkeyup = (e) => {this.keyStat[e.key] = false;};
+        window.onkeydown = (e) => { this.keyStat[e.key] = true; };
+        window.onkeyup = (e) => { this.keyStat[e.key] = false; };
     }
 
     move(x, y) {
@@ -325,8 +374,8 @@ class PerspectiveManager {
         if (this.keyStat['s']) dy++;
         if (this.keyStat['d']) dx++;
 
-        this.th -= dx / 200;
-        this.pi += dy / 200;
+        this.th -= dx / 20;
+        this.pi += dy / 20;
         this.normalize();
     }
 
@@ -345,7 +394,7 @@ class PerspectiveManager {
         ).resize(-this.baseLength);
         v = v.plus(basePosition);
 
-        let s = -sin(this.th)*v.x + cos(this.th)*v.y;
+        let s = -sin(this.th) * v.x + cos(this.th) * v.y;
         let t = sin(this.pi) * cos(this.th) * v.x + sin(this.pi) * sin(this.th) * v.y - cos(this.pi) * v.z;
         let u = cos(this.pi) * cos(this.th) * v.x + cos(this.pi) * sin(this.th) * v.y + sin(this.pi) * v.z;
 
