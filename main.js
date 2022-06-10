@@ -1,11 +1,11 @@
 const DEBUG = true;
 
-let MIN_LENGTH;
-
 window.onload = function () {
-    MIN_LENGTH = Math.min(window.innerWidth, window.innerHeight);
     let animation = new Animation(document.getElementById('output'));
     animation.start();
+    window.onresize = function (e) {
+        animation.onload();
+    }
 }
 
 class Animation {
@@ -85,6 +85,20 @@ class Animation {
         if (count % 200 == 0)
             this.objs.push(new Planet({ manager: this.graphicManager, offset: this.sun.r }));
     }
+
+    onload() {
+        this.width = 0 | window.innerWidth;
+        this.height = 0 | window.innerHeight;
+
+        this.ctx.canvas.width = this.width;
+        this.ctx.canvas.height = this.height;
+
+        this.ctx = this.ctx.canvas.getContext('2d');
+        this.ctx.translate(this.width / 2, this.height / 2);
+
+        this.ctx.textAlign = "center";
+        this.ctx.textBaseline = "middle";
+    }
 }
 
 class Planet {
@@ -138,11 +152,13 @@ class Planet {
                 ctx.stroke();
             }
 
-            ctx.fillStyle = "#000000";
-            if (pos.squareSize())
-                ctx.fillText(0 | Math.sqrt(this.pos.squareSize()), pos.x, pos.y);
-            else
-                ctx.fillText(0 | this.r * PerspectiveManager.screenLength / pos.z, pos.x, pos.y);
+            if (this.pos.squareSize()) {
+                ctx.fillStyle = "#000000";
+                if (pos.squareSize())
+                    ctx.fillText(0 | Math.sqrt(this.pos.squareSize()), pos.x, pos.y);
+                else
+                    ctx.fillText(0 | this.r * PerspectiveManager.screenLength / pos.z, pos.x, pos.y);
+            }
         }
 
         ctx.restore();
@@ -189,6 +205,7 @@ class Sun extends Planet {
         if (DEBUG) {
             let pos = this.graphicManager.projection(this.pos);
             ctx.save();
+            ctx.fillStyle = "#000000";
             ctx.fillText(this.r, pos.x, pos.y);
             ctx.restore();
         }
