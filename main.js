@@ -1,4 +1,4 @@
-const DEBUG = true;
+const DEBUG = false;
 
 window.onload = function () {
     let animation = new Animation(document.getElementById('output'));
